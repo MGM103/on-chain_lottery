@@ -11,8 +11,13 @@ pragma solidity ^0.8.19;
 contract Lottery {
     uint256 private s_entryFee;
     address private s_owner;
+    address payable[] private s_participants;
+
+    /** Events */
+    event LotteryEntered(address indexed participant);
 
     error Lottery__NotOwner();
+    error Lottery__InsufficientFunds();
 
     constructor(uint256 entryFee) {
         s_entryFee = entryFee;
@@ -24,14 +29,23 @@ contract Lottery {
         _;
     }
 
-    function enterLottery() public payable {}
+    function enterLottery() external payable {
+        if (msg.value < s_entryFee) revert Lottery__InsufficientFunds();
 
-    /** Setter functions */
+        s_participants.push(payable(msg.sender));
+        emit LotteryEntered(msg.sender);
+    }
+
+    /**
+     * Setter functions
+     */
     function setEntryFee(uint256 newEntryFee) external onlyOwner {
         s_entryFee = newEntryFee;
     }
 
-    /** Getter functions */
+    /**
+     * Getter functions
+     */
     function getEntryFee() public view returns (uint256) {
         return s_entryFee;
     }
