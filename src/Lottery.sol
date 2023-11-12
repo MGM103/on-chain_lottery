@@ -13,13 +13,17 @@ import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/inter
  * @dev This contract implements Chainlink VRF v2
  */
 contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
-    /** Type Declarations */
+    /**
+     * Type Declarations
+     */
     enum LotteryState {
         OPEN,
         IN_PROGRESS
     }
 
-    /** State Variables */
+    /**
+     * State Variables
+     */
     uint32 private constant NUMBER_WORDS = 1;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
 
@@ -36,11 +40,15 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
     address private s_lastWinner;
     LotteryState private s_lotteryState;
 
-    /** Events */
+    /**
+     * Events
+     */
     event LotteryEntered(address indexed participant);
     event LotteryWon(address indexed winner);
 
-    /** Errors */
+    /**
+     * Errors
+     */
     error Lottery__NotOwner();
     error Lottery__InsufficientFunds();
     error Lottery__PayoutFailed();
@@ -72,13 +80,17 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         s_lotteryState = LotteryState.OPEN;
     }
 
-    /** Modifiers */
+    /**
+     * Modifiers
+     */
     modifier onlyOwner() {
         if (msg.sender != s_owner) revert Lottery__NotOwner();
         _;
     }
 
-    /** Lottery Functions */
+    /**
+     * Lottery Functions
+     */
     function enterLottery() external payable {
         if (msg.value < s_entryFee) revert Lottery__InsufficientFunds();
         if (s_lotteryState != LotteryState.OPEN) revert Lottery__NotOpen();
@@ -87,6 +99,9 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         emit LotteryEntered(msg.sender);
     }
 
+    /**
+     * Chainlink Automation Functions
+     */
     /**
      * @dev This is the function that the Chainlink automation nodes call
      * to determine whether or not to perform an upkeep.
@@ -97,12 +112,21 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
      * 4. (Implicit) The subscription for automate is funded with link
      */
     function checkUpkeep(
-        bytes memory /** checkData */
+        bytes memory
     )
         public
         view
         override
-        returns (bool upkeepRequired, bytes memory /** performData */)
+        returns (
+            /**
+             * checkData
+             */
+            bool upkeepRequired,
+            bytes memory
+        )
+    /**
+     * performData
+     */
     {
         bool timePassed = (block.timestamp - s_lastTimeStamp) > i_interval;
         bool lotteryOpen = s_lotteryState == LotteryState.OPEN;
@@ -113,17 +137,19 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         return (upkeepRequired, bytes("0x0")); // blank bytes object
     }
 
-    function performUpkeep(
-        bytes calldata /** performData */
-    ) external override {
+    function performUpkeep(bytes calldata) external override /**
+     * performData
+     */
+    {
         (bool upkeepRequired, ) = checkUpkeep("");
-        if (!upkeepRequired)
+        if (!upkeepRequired) {
             revert Lottery__UpkeepNotRequired(
                 address(this).balance,
                 s_participants.length,
                 s_lastTimeStamp,
                 s_lotteryState
             );
+        }
 
         s_lotteryState = LotteryState.IN_PROGRESS;
 
@@ -136,7 +162,9 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         );
     }
 
-    /** Chainlink VRF Functions */
+    /**
+     * Chainlink VRF Functions
+     */
     function fulfillRandomWords(
         uint256 requestId,
         uint256[] memory randomWords
@@ -154,17 +182,29 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         if (!success) revert Lottery__PayoutFailed();
     }
 
-    /** Setter functions */
+    /**
+     * Setter functions
+     */
     function setEntryFee(uint256 newEntryFee) external onlyOwner {
         s_entryFee = newEntryFee;
     }
 
-    /** Getter functions */
+    /**
+     * Getter functions
+     */
+    function getInterval() public view returns (uint256) {
+        return i_interval;
+    }
+
     function getEntryFee() public view returns (uint256) {
         return s_entryFee;
     }
 
     function getOwner() public view returns (address) {
         return s_owner;
+    }
+
+    function getLotteryState() public view returns (LotteryState) {
+        return s_lotteryState;
     }
 }

@@ -11,3 +11,6 @@ This project creates a provably random lottery via smart contracts that allows u
 2. After a period of time, the lottery will automatically draw a winner at random
     1. Chainlink Automation will be used to create a time based trigger
     2. Chainlink VRF will be used to select the winner from the participant pool
+
+## Testing
+
