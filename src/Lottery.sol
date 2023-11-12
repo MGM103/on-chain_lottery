@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 
 /**
  * @title Lottery
@@ -11,7 +12,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
  * @notice This contract is a lottery contract
  * @dev This contract implements Chainlink VRF v2
  */
-contract Lottery is VRFConsumerBaseV2 {
+contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
     /** Type Declarations */
     enum LotteryState {
         OPEN,
@@ -42,9 +43,14 @@ contract Lottery is VRFConsumerBaseV2 {
     /** Errors */
     error Lottery__NotOwner();
     error Lottery__InsufficientFunds();
-    error Lottery__InsufficientTimePassed();
     error Lottery__PayoutFailed();
     error Lottery__NotOpen();
+    error Lottery__UpkeepNotRequired(
+        uint256 currentBal,
+        uint256 currentPlayers,
+        uint256 currentLastTimeStamp,
+        LotteryState currentState
+    );
 
     constructor(
         uint256 entryFee,
@@ -81,11 +87,47 @@ contract Lottery is VRFConsumerBaseV2 {
         emit LotteryEntered(msg.sender);
     }
 
-    function selectWinner() external {
-        if ((block.timestamp - s_lastTimeStamp) <= i_interval)
-            revert Lottery__InsufficientTimePassed();
+    /**
+     * @dev This is the function that the Chainlink automation nodes call
+     * to determine whether or not to perform an upkeep.
+     * The following should be true for this to return true:
+     * 1. The time interval has been surpassed between lotteries
+     * 2. The lottery is open
+     * 3. Contract has ETH & therefore players
+     * 4. (Implicit) The subscription for automate is funded with link
+     */
+    function checkUpkeep(
+        bytes memory /** checkData */
+    )
+        public
+        view
+        override
+        returns (bool upkeepRequired, bytes memory /** performData */)
+    {
+        bool timePassed = (block.timestamp - s_lastTimeStamp) > i_interval;
+        bool lotteryOpen = s_lotteryState == LotteryState.OPEN;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_participants.length > 0;
+
+        upkeepRequired = timePassed && lotteryOpen && hasBalance && hasPlayers;
+        return (upkeepRequired, bytes("0x0")); // blank bytes object
+    }
+
+    function performUpkeep(
+        bytes calldata /** performData */
+    ) external override {
+        (bool upkeepRequired, ) = checkUpkeep("");
+        if (!upkeepRequired)
+            revert Lottery__UpkeepNotRequired(
+                address(this).balance,
+                s_participants.length,
+                s_lastTimeStamp,
+                s_lotteryState
+            );
+
         s_lotteryState = LotteryState.IN_PROGRESS;
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
+
+        i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gaslane
             i_subscriptionID,
             REQUEST_CONFIRMATIONS,
