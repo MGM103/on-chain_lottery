@@ -21,6 +21,8 @@ contract LotteryTest is Test {
     address public PARTICIPANT = makeAddr("participant");
     uint256 public constant START_PARTICIPANT_BALANCE = 10 ether;
 
+    event LotteryEntered(address indexed participant);
+
     function setUp() external {
         DeployLottery deployLottery = new DeployLottery();
         (lottery, helperConfig) = deployLottery.run();
@@ -33,6 +35,8 @@ contract LotteryTest is Test {
             subscriptionID,
             callbackGasLimit
         ) = helperConfig.activeNetworkConfig();
+
+        vm.deal(PARTICIPANT, START_PARTICIPANT_BALANCE);
     }
 
     function testLotteryStartingState() public view {
@@ -53,5 +57,23 @@ contract LotteryTest is Test {
 
         vm.expectRevert(Lottery.Lottery__InsufficientFunds.selector);
         lottery.enterLottery();
+    }
+
+    function testParticipantRegisteredUponEntry() public {
+        vm.prank(PARTICIPANT);
+
+        lottery.enterLottery{value: entryFee}();
+        address payable[] memory participantArr = lottery.getParticipants();
+        address participant = lottery.getParticipant(0);
+
+        assert(participantArr.length == 1);
+        assert(participant == PARTICIPANT);
+    }
+
+    function testEmitsEventUponEntry() public {
+        vm.prank(PARTICIPANT);
+        vm.expectEmit(true, false, false, false, address(lottery));
+        emit LotteryEntered(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
     }
 }

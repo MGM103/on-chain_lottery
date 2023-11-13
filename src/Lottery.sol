@@ -207,4 +207,14 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
     function getLotteryState() public view returns (LotteryState) {
         return s_lotteryState;
     }
+
+    function getParticipants() public view returns (address payable[] memory) {
+        return s_participants;
+    }
+
+    function getParticipant(
+        uint256 participantIndex
+    ) public view returns (address) {
+        return s_participants[participantIndex];
+    }
 }
