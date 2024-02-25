@@ -17,6 +17,7 @@ contract LotteryTest is Test {
     bytes32 gasLane;
     uint64 subscriptionID;
     uint32 callbackGasLimit;
+    address link;
 
     address public PARTICIPANT = makeAddr("participant");
     uint256 public constant START_PARTICIPANT_BALANCE = 10 ether;
@@ -33,7 +34,8 @@ contract LotteryTest is Test {
             vrfCoordinator,
             gasLane,
             subscriptionID,
-            callbackGasLimit
+            callbackGasLimit,
+            link
         ) = helperConfig.activeNetworkConfig();
 
         vm.deal(PARTICIPANT, START_PARTICIPANT_BALANCE);
@@ -74,6 +76,20 @@ contract LotteryTest is Test {
         vm.prank(PARTICIPANT);
         vm.expectEmit(true, false, false, false, address(lottery));
         emit LotteryEntered(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+    }
+
+    function testCantEnterLotteryWhenNotOpen() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+
+        /** Trigger checkUpkeep */
+        vm.warp(block.timestamp + interval + 1); // Fast forward time the required amount + 1 second
+        vm.roll(block.number + 1); // Go to next block
+        lottery.performUpkeep("");
+
+        vm.expectRevert(Lottery.Lottery__NotOpen.selector);
+        vm.prank(PARTICIPANT);
         lottery.enterLottery{value: entryFee}();
     }
 }
