@@ -6,6 +6,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 import {Link} from "../test/mocks/Link.sol";
+import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script {
     function createSubscriptionUsingConfig() public returns (uint64) {
@@ -38,7 +39,7 @@ contract CreateSubscription is Script {
     }
 }
 
-contract FundAccount is Script {
+contract FundSubscription is Script {
     uint96 public constant FUND_AMT = 2 ether;
 
     function fundAccountUsingConfig() public {
@@ -85,4 +86,34 @@ contract FundAccount is Script {
     function run() external {
         fundAccountUsingConfig();
     }
+}
+
+contract AddConsumer is Script {
+    function addConsumerUsingConfig(address lottery) public {
+        HelperConfig helperConfig = new HelperConfig();
+        (
+            ,
+            ,
+            address vrfCoordinator,
+            ,
+            uint64 subscriptionId,
+            ,
+        ) = helperConfig.activeNetworkConfig();
+    }
+
+    function addConsumer(address lottery, address vrfCoordinator, uint64 subscriptionId) public {
+        console.log("Adding consumer coordinator contract: ", lottery);
+        console.log("Using vrfCoordinator: ", vrfCoordinator);
+        console.log("Adding to subscription: ", subscriptionId);
+
+        vm.startBroadcast();
+        VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(subscriptionId, lottery);
+        vm.stopBroadcast();
+    }
+
+    function run() external {
+        address lottery = DevOpsTools.get_most_recent_deployment("Lottery", block.chainid);
+        addConsumerUsingConfig(lottery);
+    }
+
 }
