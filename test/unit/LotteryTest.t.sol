@@ -92,4 +92,45 @@ contract LotteryTest is Test {
         vm.prank(PARTICIPANT);
         lottery.enterLottery{value: entryFee}();
     }
+
+    function testCheckUpkeepMustHaveFunds() public {
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upkeepRequired, ) = lottery.checkUpkeep("");
+
+        assert(!upkeepRequired);
+    }
+
+    function testCheckUpkeepRaffleMustBeOpen() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        lottery.performUpkeep("");
+
+        (bool upkeepRequired, ) = lottery.checkUpkeep("");
+
+        assert(!upkeepRequired);
+    }
+
+    function testCheckUpkeepMustAllowEnoughTimeToPass() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+
+        (bool upkeepRequired, ) = lottery.checkUpkeep("");
+
+        assert(!upkeepRequired);
+    }
+
+    function testCheckUpkeepSucceeds() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upkeepRequired, ) = lottery.checkUpkeep("");
+
+        assert(upkeepRequired);
+    }
 }
