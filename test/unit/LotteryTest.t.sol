@@ -133,4 +133,25 @@ contract LotteryTest is Test {
 
         assert(upkeepRequired);
     }
+
+    function testPerformUpkeepContingentOnCheckUpkeepTrue() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        lottery.performUpkeep("");
+    }
+
+    function testPerformUpkeepFailsWhenCheckUpkeepIsFalse() public {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+
+        uint256 currentBalance = address(lottery).balance;
+        uint256 numPlayers = 1;
+        Lottery.LotteryState lotteryState = lottery.getLotteryState();
+
+        vm.expectRevert(abi.encodeWithSelector(Lottery.Lottery__UpkeepNotRequired.selector, currentBalance, numPlayers, block.timestamp, lotteryState));
+        lottery.performUpkeep("");
+    }
 }
