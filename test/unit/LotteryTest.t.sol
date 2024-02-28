@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {Lottery} from "../../src/Lottery.sol";
 import {DeployLottery} from "../../script/DeployLottery.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
@@ -102,11 +103,18 @@ contract LotteryTest is Test {
         assert(!upkeepRequired);
     }
 
-    function testCheckUpkeepRaffleMustBeOpen() public {
+    modifier lotteryEnteredAndTimePassed() {
         vm.prank(PARTICIPANT);
         lottery.enterLottery{value: entryFee}();
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
+        _;
+    }
+
+    function testCheckUpkeepRaffleMustBeOpen()
+        public
+        lotteryEnteredAndTimePassed
+    {
         lottery.performUpkeep("");
 
         (bool upkeepRequired, ) = lottery.checkUpkeep("");
@@ -123,23 +131,16 @@ contract LotteryTest is Test {
         assert(!upkeepRequired);
     }
 
-    function testCheckUpkeepSucceeds() public {
-        vm.prank(PARTICIPANT);
-        lottery.enterLottery{value: entryFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
-
+    function testCheckUpkeepSucceeds() public lotteryEnteredAndTimePassed {
         (bool upkeepRequired, ) = lottery.checkUpkeep("");
 
         assert(upkeepRequired);
     }
 
-    function testPerformUpkeepContingentOnCheckUpkeepTrue() public {
-        vm.prank(PARTICIPANT);
-        lottery.enterLottery{value: entryFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
-
+    function testPerformUpkeepContingentOnCheckUpkeepTrue()
+        public
+        lotteryEnteredAndTimePassed
+    {
         lottery.performUpkeep("");
     }
 
@@ -151,7 +152,31 @@ contract LotteryTest is Test {
         uint256 numPlayers = 1;
         Lottery.LotteryState lotteryState = lottery.getLotteryState();
 
-        vm.expectRevert(abi.encodeWithSelector(Lottery.Lottery__UpkeepNotRequired.selector, currentBalance, numPlayers, block.timestamp, lotteryState));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Lottery.Lottery__UpkeepNotRequired.selector,
+                currentBalance,
+                numPlayers,
+                block.timestamp,
+                lotteryState
+            )
+        );
         lottery.performUpkeep("");
+    }
+
+    function testEventDataEmittedAndStatePostPerformUpkeep()
+        public
+        lotteryEnteredAndTimePassed
+    {
+        vm.recordLogs();
+        lottery.performUpkeep("");
+
+        Vm.Log[] memory eventEntries = vm.getRecordedLogs();
+        bytes32 requestId = eventEntries[0].topics[2];
+
+        Lottery.LotteryState lotteryState = lottery.getLotteryState();
+
+        assert(uint256(requestId) > 0);
+        assert(uint256(lotteryState) == 1);
     }
 }
