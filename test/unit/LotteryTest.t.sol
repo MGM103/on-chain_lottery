@@ -7,6 +7,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {Lottery} from "../../src/Lottery.sol";
 import {DeployLottery} from "../../script/DeployLottery.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract LotteryTest is Test {
     Lottery lottery;
@@ -178,5 +179,55 @@ contract LotteryTest is Test {
 
         assert(uint256(requestId) > 0);
         assert(uint256(lotteryState) == 1);
+    }
+
+    /** Chainlink VRF Random Words Test */
+
+    function testFulfillRandomWordsTriggeredOnlyAfterPerformUpkeep(
+        uint256 randomRequestId
+    ) public lotteryEnteredAndTimePassed {
+        vm.expectRevert("nonexistent request");
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            randomRequestId,
+            address(lottery)
+        );
+    }
+
+    function testFulfillRandomWordsDistributesLotteryAndResetsState()
+        public
+        lotteryEnteredAndTimePassed
+    {
+        uint256 additionalParticipants = 4;
+
+        for (uint256 i = 0; i <= additionalParticipants; i++) {
+            address participant = address(uint160(i));
+            hoax(participant, START_PARTICIPANT_BALANCE);
+            lottery.enterLottery{value: entryFee}();
+        }
+
+        uint256 prize = address(lottery).balance;
+
+        vm.recordLogs();
+        lottery.performUpkeep("");
+
+        Vm.Log[] memory eventEntries = vm.getRecordedLogs();
+        bytes32 requestId = eventEntries[0].topics[2];
+
+        uint256 previousTimeStamp = lottery.getLastTimeStamp();
+
+        // Mimic co-ordinator
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            uint256(requestId),
+            address(lottery)
+        );
+
+        assert(uint256(lottery.getLotteryState()) == 0);
+        assert(lottery.getLastWinner() != address(0));
+        assert(lottery.getNumberOfParticipants() == 0);
+        assert(lottery.getLastTimeStamp() > previousTimeStamp);
+        assert(
+            lottery.getLastWinner().balance ==
+                (prize + START_PARTICIPANT_BALANCE - entryFee)
+        );
     }
 }

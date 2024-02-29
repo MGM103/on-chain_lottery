@@ -137,10 +137,12 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         return (upkeepRequired, bytes("0x0")); // blank bytes object
     }
 
-    function performUpkeep(bytes calldata) external override /**
-     * performData
-     */
-    {
+    function performUpkeep(
+        bytes calldata
+        /**
+         * performData
+         */
+    ) external override {
         (bool upkeepRequired, ) = checkUpkeep("");
         if (!upkeepRequired) {
             revert Lottery__UpkeepNotRequired(
@@ -212,9 +214,21 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
         return s_participants;
     }
 
+    function getNumberOfParticipants() public view returns (uint256) {
+        return s_participants.length;
+    }
+
     function getParticipant(
         uint256 participantIndex
     ) public view returns (address) {
         return s_participants[participantIndex];
+    }
+
+    function getLastWinner() public view returns (address) {
+        return s_lastWinner;
+    }
+
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
     }
 }
