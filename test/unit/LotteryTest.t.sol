@@ -37,10 +37,26 @@ contract LotteryTest is Test {
             gasLane,
             subscriptionID,
             callbackGasLimit,
-            link
+            link,
+
         ) = helperConfig.activeNetworkConfig();
 
         vm.deal(PARTICIPANT, START_PARTICIPANT_BALANCE);
+    }
+
+    modifier lotteryEnteredAndTimePassed() {
+        vm.prank(PARTICIPANT);
+        lottery.enterLottery{value: entryFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
     }
 
     function testLotteryStartingState() public view {
@@ -102,14 +118,6 @@ contract LotteryTest is Test {
         (bool upkeepRequired, ) = lottery.checkUpkeep("");
 
         assert(!upkeepRequired);
-    }
-
-    modifier lotteryEnteredAndTimePassed() {
-        vm.prank(PARTICIPANT);
-        lottery.enterLottery{value: entryFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
-        _;
     }
 
     function testCheckUpkeepRaffleMustBeOpen()
@@ -185,7 +193,7 @@ contract LotteryTest is Test {
 
     function testFulfillRandomWordsTriggeredOnlyAfterPerformUpkeep(
         uint256 randomRequestId
-    ) public lotteryEnteredAndTimePassed {
+    ) public lotteryEnteredAndTimePassed skipFork {
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
             randomRequestId,
@@ -196,6 +204,7 @@ contract LotteryTest is Test {
     function testFulfillRandomWordsDistributesLotteryAndResetsState()
         public
         lotteryEnteredAndTimePassed
+        skipFork
     {
         uint256 additionalParticipants = 4;
 

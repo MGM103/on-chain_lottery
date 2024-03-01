@@ -17,23 +17,25 @@ contract DeployLottery is Script {
             bytes32 gasLane,
             uint64 subscriptionID,
             uint32 callbackGasLimit,
-            address link
+            address link,
+            uint256 deployerKey
         ) = helperConfig.activeNetworkConfig();
 
         if (subscriptionID == 0) {
             console.log("Creating subscription programtically...");
             CreateSubscription createSubscription = new CreateSubscription();
             subscriptionID = createSubscription.createSubscription(
-                vrfCoordinator
+                vrfCoordinator,
+                deployerKey
             );
 
             FundSubscription fundSubscription = new FundSubscription();
             fundSubscription.fundSubscription(
                 vrfCoordinator,
                 subscriptionID,
-                link
+                link,
+                deployerKey
             );
-
         }
 
         vm.startBroadcast();
@@ -47,8 +49,13 @@ contract DeployLottery is Script {
         );
         vm.stopBroadcast();
 
-        AddConsumer addConsumer = new AddConsumer(); 
-        addConsumer.addConsumer(address(lottery), vrfCoordinator, subscriptionID);
+        AddConsumer addConsumer = new AddConsumer();
+        addConsumer.addConsumer(
+            address(lottery),
+            vrfCoordinator,
+            subscriptionID,
+            deployerKey
+        );
 
         return (lottery, helperConfig);
     }
