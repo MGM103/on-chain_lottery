@@ -12,7 +12,7 @@ This project creates a provably random lottery via smart contracts that allows u
 2. [Lottery Process](#lottery-process)
 3. [Usage](#usage)
    - [3.1 Deploying Locally](#deploying-locally)
-   - [3.2 Deploying on a testnet or mainnet](#deploying-on-a-testnet-or-mainnet)
+   - [3.2 Deploying to a testnet or mainnet](#deploying-to-a-testnet-or-mainnet)
 4. [Testing](#testing)
    - [4.1 Unit tests](#unit-tests)
    - [4.2 Coverage](#test-coverage)
@@ -29,14 +29,22 @@ This project creates a provably random lottery via smart contracts that allows u
 
 ## Getting Started
 
-### Requirements:
+### Requirements
 
 The following must be installed on your machine:
 
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git/)
 - [foundry](https://book.getfoundry.sh/getting-started/installation)
 
-### Usage
+### Quickstart:
+
+```
+git clone https://github.com/MGM103/on-chain_lottery.git
+cd on-chain_lottery
+forge build
+```
+
+## Usage
 
 ### Deploying locally
 
@@ -52,7 +60,7 @@ In another terminal run the following command to deploy:
 make deploy
 ```
 
-### Deployment to a testnet or mainnet
+### Deploying to a testnet or mainnet
 
 1. Setup environment variables
 
