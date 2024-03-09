@@ -6,18 +6,19 @@ This project creates a provably random lottery via smart contracts that allows u
 
 ## Table of contents
 
-1. [Getting started](#getting-started)
-   - [1.1 Requirements](#requirements)
-   - [1.2 Quickstart](#quickstart)
-2. [Lottery Process](#lottery-process)
+1. [Lottery Process](#lottery-process)
+2. [Getting started](#getting-started)
+   - [2.1 Requirements](#requirements)
+   - [2.2 Quickstart](#quickstart)
 3. [Usage](#usage)
    - [3.1 Deploying Locally](#deploying-locally)
    - [3.2 Deploying to a testnet or mainnet](#deploying-to-a-testnet-or-mainnet)
-4. [Testing](#testing)
-   - [4.1 Unit tests](#unit-tests)
-   - [4.2 Coverage](#test-coverage)
-5. [Additional Notes](#additional-notes)
-6. [Acknowledgements](#acknowledgements)
+4. [Scripts](#scripts)
+5. [Testing](#testing)
+   - [5.1 Unit tests](#unit-tests)
+   - [5.2 Coverage](#test-coverage)
+6. [Additional Notes](#additional-notes)
+7. [Acknowledgements](#acknowledgements)
 
 ## Lottery Process
 
@@ -41,7 +42,7 @@ The following must be installed on your machine:
 ```
 git clone https://github.com/MGM103/on-chain_lottery.git
 cd on-chain_lottery
-forge build
+make build
 ```
 
 ## Usage
@@ -62,21 +63,20 @@ make deploy
 
 ### Deploying to a testnet or mainnet
 
-1. Setup environment variables
+**1. Setup environment variables**
 
-You'll want to set your `SEPOLIA_RPC_URL` and `PRIVATE_KEY` as environment variables. You can add them to a `.env` file.
+You'll want to set your `SEPOLIA_RPC_URL`, `PRIVATE_KEY` & `ETHERSCAN_API_KEY` as environment variables. You can add them to a `.env` file.
 
 - `PRIVATE_KEY`: The private key of your account (like from [metamask](https://metamask.io/)). **NOTE:** FOR DEVELOPMENT, PLEASE USE A KEY THAT DOESN'T HAVE ANY REAL FUNDS ASSOCIATED WITH IT.
   - You can [learn how to export it here](https://metamask.zendesk.com/hc/en-us/articles/360015289632-How-to-Export-an-Account-Private-Key).
 - `SEPOLIA_RPC_URL`: This is url of the sepolia testnet node you're working with. You can get setup with one for free from [Alchemy](https://alchemy.com/?a=673c802981)
+- `ETHERSCAN_API_KEY` to verify your contract on [Etherscan](https://etherscan.io/).
 
-Optionally, add your `ETHERSCAN_API_KEY` if you want to verify your contract on [Etherscan](https://etherscan.io/).
-
-1. Get testnet ETH
+**2. Get testnet ETH**
 
 Head over to [faucets.chain.link](https://faucets.chain.link/) and get some testnet ETH. You should see the ETH show up in your metamask.
 
-2. Deploy
+**3. Deploy**
 
 ```
 make deploy ARGS="--network sepolia"
@@ -84,7 +84,7 @@ make deploy ARGS="--network sepolia"
 
 This will setup a ChainlinkVRF Subscription for you. If you already have one, update it in the `scripts/HelperConfig.s.sol` file. It will also automatically add your contract as a consumer.
 
-3. Register a Chainlink Automation Upkeep
+**4. Register a Chainlink Automation Upkeep**
 
 [You can follow the documentation if you get lost.](https://docs.chain.link/chainlink-automation/compatible-contracts)
 
